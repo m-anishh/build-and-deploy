@@ -1,0 +1,32 @@
+{
+  "name": "production-ready-devops-app",
+  "version": "1.0.0",
+  "description": "A production-ready application demonstrating DevOps best practices",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "NODE_ENV=development node app.js",
+    "test": "jest --coverage",
+    "lint": "eslint app.js",
+    "pretest": "npm run lint"
+  },
+  "keywords": [
+    "devops",
+    "kubernetes",
+    "docker",
+    "cicd"
+  ],
+  "author": "DevOps Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.44.0",
+    "jest": "^29.5.0",
+    "supertest": "^6.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
