@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1782987124338" clover="3.2.0">
-  <project timestamp="1782987124338" name="All files">
+<coverage generated="1790181371756" clover="3.2.0">
+  <project timestamp="1790181371757" name="All files">
     <metrics statements="35" coveredstatements="15" conditionals="14" coveredconditionals="4" methods="9" coveredmethods="2" elements="58" coveredelements="21" complexity="0" loc="35" ncloc="35" packages="1" files="1" classes="1"/>
-    <file name="app.js" path="/home/manish/Build-and-deploy/app.js">
+    <file name="app.js" path="/home/runner/work/build-and-deploy/build-and-deploy/app.js">
       <metrics statements="35" coveredstatements="15" conditionals="14" coveredconditionals="4" methods="9" coveredmethods="2"/>
       <line num="1" count="1" type="stmt"/>
       <line num="2" count="1" type="stmt"/>
