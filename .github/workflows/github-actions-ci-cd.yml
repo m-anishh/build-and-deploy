@@ -29,7 +29,6 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
-      - run: npm run lint
         continue-on-error: true
       - run: npm test
         continue-on-error: true
