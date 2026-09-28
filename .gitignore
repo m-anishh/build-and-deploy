@@ -7,4 +7,3 @@ infra/terraform/*.tfstate
 infra/terraform/*.tfstate.*
 infra/terraform/*.tfvars
 infra/terraform/.terraform.lock.hcl
-.mcp.json

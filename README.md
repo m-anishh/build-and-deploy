@@ -41,7 +41,6 @@ Kubernetes with an automatic rollback on failure. Authentication to AWS uses
 - [Repo layout](#repo-layout)
 
 ---
-
 ## Architecture
 
 ```
