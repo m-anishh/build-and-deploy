@@ -1,5 +1,13 @@
 # Build-and-deploy — Production-ready DevOps project
 
+![CI/CD](https://github.com/m-anishh/build-and-deploy/actions/workflows/github-actions-ci-cd.yml/badge.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-EKS%201.32-326CE5?logo=kubernetes&logoColor=white)
+![Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC?logo=terraform&logoColor=white)
+![Prometheus](https://img.shields.io/badge/metrics-Prometheus-E6522C?logo=prometheus&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
 A **stateful REST API** (Express + **PostgreSQL/RDS**) shipped through a full
 CI/CD pipeline to **Amazon EKS**, with **Prometheus metrics**, **structured
 logging**, and a **Grafana dashboard**. GitHub Actions builds and scans the
@@ -14,6 +22,23 @@ Kubernetes with an automatic rollback on failure. Authentication to AWS uses
 - **AWS account:** `135438495833` · **Region:** `eu-north-1`
 - **Cluster:** `build-and-deploy` (EKS 1.32) · **Namespace:** `production-app`
 - **Image:** `ghcr.io/m-anishh/build-and-deploy:latest`
+
+---
+
+## Table of contents
+
+- [Architecture](#architecture)
+- [Application](#application)
+- [Docker](#docker)
+- [Database & migrations](#database--migrations)
+- [Observability](#observability)
+- [CI/CD pipeline](#cicd-pipeline)
+- [Infrastructure (EKS)](#infrastructure-eks)
+- [Kubernetes manifests](#kubernetes-manifests)
+- [Deploy, verify, rollback](#deploy-verify-rollback)
+- [Teardown (stop all billing)](#teardown-stop-all-billing)
+- [Troubleshooting](#troubleshooting)
+- [Repo layout](#repo-layout)
 
 ---
 
