@@ -66,11 +66,14 @@ spec:
               containerPort: 3000
               protocol: TCP
           
-          # Environment variables from ConfigMap
+          # Environment variables from ConfigMap (app + non-secret DB config)
+          # and Secret (DB credentials).
           envFrom:
             - configMapRef:
                 name: app-config
-          
+            - secretRef:
+                name: db-credentials
+
           # Additional environment variables
           env:
             - name: POD_NAME

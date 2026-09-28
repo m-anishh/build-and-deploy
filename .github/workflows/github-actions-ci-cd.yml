@@ -103,14 +103,16 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Update kubeconfig for EKS
         run: aws eks update-kubeconfig --name "$EKS_CLUSTER" --region "$AWS_REGION"
-      - name: Point manifest at built image
+      - name: Point manifests at built image
         run: |
           IMAGE="${REGISTRY}/${IMAGE_NAME}:latest"
           IMAGE="$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')"
-          sed -i "s|ghcr.io/yourusername/devops-app:latest|${IMAGE}|g" k8s/k8s-deployment.yaml
+          sed -i "s|ghcr.io/yourusername/devops-app:latest|${IMAGE}|g" \
+            k8s/k8s-deployment.yaml k8s/k8s-migration-job.yaml
       - name: Apply manifests
         run: |
-          # namespace is pre-created out-of-band; CI role is namespace-scoped
+          # namespace, ConfigMap DB_HOST, and db-credentials Secret are managed
+          # out-of-band (Terraform / External Secrets); CI role is namespace-scoped.
           kubectl apply -f k8s/k8s-rbac.yaml
           kubectl apply -f k8s/k8s-configmap.yaml
       - name: Create GHCR image pull secret
@@ -123,6 +125,12 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
           kubectl patch serviceaccount devops-app -n "$K8S_NAMESPACE" \
             -p '{"imagePullSecrets":[{"name":"ghcr-pull"}]}'
+      - name: Run database migrations
+        run: |
+          kubectl delete job db-migrate -n "$K8S_NAMESPACE" --ignore-not-found
+          kubectl apply -f k8s/k8s-migration-job.yaml
+          kubectl wait --for=condition=complete job/db-migrate -n "$K8S_NAMESPACE" --timeout=180s \
+            || (kubectl logs job/db-migrate -n "$K8S_NAMESPACE" --tail=100; exit 1)
       - name: Apply workload manifests
         run: |
           kubectl apply -f k8s/k8s-deployment.yaml
