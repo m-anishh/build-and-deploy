@@ -23,3 +23,4 @@ describe('App', () => {
     expect((await request(app).get('/nope')).statusCode).toBe(404);
   });
 });
+
