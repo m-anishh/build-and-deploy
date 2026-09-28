@@ -80,7 +80,7 @@ resource "aws_db_instance" "this" {
   skip_final_snapshot     = !var.deletion_protection
   apply_immediately       = true
 
-  performance_insights_enabled = true
+  performance_insights_enabled = var.performance_insights
 
   tags = local.tags
 }
