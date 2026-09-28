@@ -1,0 +1,58 @@
+# Runs database migrations to completion before (or as part of) a rollout.
+# Apply this after the ConfigMap + Secret and wait for it before the Deployment:
+#
+#   kubectl apply -f k8s/k8s-migration-job.yaml
+#   kubectl wait --for=condition=complete job/db-migrate -n production-app --timeout=120s
+#
+# The image is replaced by CI with the freshly built tag (same sed target as the
+# Deployment), so migrations always match the code being deployed.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: production-app
+  labels:
+    app: devops-app
+    component: migration
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: devops-app
+        component: migration
+    spec:
+      restartPolicy: Never
+      serviceAccountName: devops-app
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate
+          image: "ghcr.io/yourusername/devops-app:latest"  # replaced by CI
+          imagePullPolicy: IfNotPresent
+          command: ["node", "scripts/migrate.js"]
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: db-credentials
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            capabilities:
+              drop:
+                - ALL

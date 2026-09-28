@@ -1,25 +1,33 @@
 {
   "name": "production-ready-devops-app",
-  "version": "1.0.0",
-  "description": "A production-ready application demonstrating DevOps best practices",
+  "version": "2.0.0",
+  "description": "A production-ready REST API with PostgreSQL, Prometheus metrics, and structured logging, demonstrating DevOps best practices",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
     "dev": "NODE_ENV=development node app.js",
-    "test": "jest --coverage",
-    "lint": "eslint app.js",
+    "test": "jest --coverage --forceExit",
+    "lint": "eslint app.js src scripts",
+    "migrate": "node scripts/migrate.js",
     "pretest": "npm run lint"
   },
   "keywords": [
     "devops",
     "kubernetes",
     "docker",
-    "cicd"
+    "cicd",
+    "postgresql",
+    "prometheus",
+    "observability"
   ],
   "author": "DevOps Team",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "pg": "^8.13.1",
+    "pino": "^9.5.0",
+    "pino-http": "^10.3.0",
+    "prom-client": "^15.1.3"
   },
   "devDependencies": {
     "eslint": "^8.44.0",

@@ -31,6 +31,9 @@ COPY --from=builder --chown=nodejs:nodejs /build/node_modules ./node_modules
 # Copy application files
 COPY --chown=nodejs:nodejs app.js .
 COPY --chown=nodejs:nodejs package.json .
+COPY --chown=nodejs:nodejs src ./src
+COPY --chown=nodejs:nodejs migrations ./migrations
+COPY --chown=nodejs:nodejs scripts ./scripts
 
 # Switch to non-root user
 USER nodejs

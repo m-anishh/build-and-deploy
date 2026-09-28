@@ -1,0 +1,41 @@
+# Local development stack: the app + PostgreSQL.
+#   docker compose up --build
+#   docker compose run --rm app node scripts/migrate.js   # run migrations
+#   curl localhost:3000/ready
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: change-me
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: appdb
+      DB_USER: appuser
+      DB_PASSWORD: change-me
+      DB_SSL: "false"
+      APP_VERSION: "2.0.0-local"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

@@ -11,8 +11,17 @@ data:
   NODE_ENV: "production"
   LOG_LEVEL: "info"
   PORT: "3000"
-  APP_VERSION: "1.0.0"
-  
+  APP_NAME: "devops-app"
+  APP_VERSION: "2.0.0"
+
+  # Database connection (non-secret parts only; credentials live in the
+  # db-credentials Secret). Point DB_HOST at your RDS endpoint.
+  DB_HOST: "REPLACE_WITH_RDS_ENDPOINT"
+  DB_PORT: "5432"
+  DB_NAME: "appdb"
+  DB_SSL: "true"
+  DB_POOL_MAX: "10"
+
   # Application configuration
   app-settings.json: |
     {
