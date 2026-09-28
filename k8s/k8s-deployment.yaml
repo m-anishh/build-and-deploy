@@ -8,7 +8,7 @@ metadata:
     version: v1
     managed-by: devops-team
 spec:
-  replicas: 3
+  replicas: 2
   strategy:
     type: RollingUpdate
     rollingUpdate:

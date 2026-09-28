@@ -8,7 +8,7 @@ metadata:
 
 managedNodeGroups:
   - name: workers
-    instanceType: t3.medium
+    instanceType: t3.micro
     desiredCapacity: 2
     minSize: 2
     maxSize: 2
