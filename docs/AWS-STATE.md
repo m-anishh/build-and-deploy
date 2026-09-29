@@ -1,7 +1,42 @@
 # AWS State — resume reference
 
-> Snapshot of the live AWS resources so a later session resumes with the same data.
-> Last updated: 2026-09-29. **Infra is left RUNNING (not torn down).**
+> Snapshot of the AWS resources + how to rebuild them.
+> Last updated: 2026-09-29. **Status: TORN DOWN to stop billing. RDS data kept as a final snapshot.**
+
+---
+
+## ▶ RESTORE TOMORROW (rebuild from scratch)
+
+Everything below was deleted to save cost. Code is in git; RDS data is in a snapshot.
+
+```bash
+# 1. Recreate the EKS cluster (~15-20 min)
+cd ~/Build-and-deploy
+eksctl create cluster -f infra/eks-cluster.yaml
+eksctl scale nodegroup --cluster build-and-deploy --name workers --nodes 4 --nodes-max 4 --region eu-north-1
+
+# 2. Restore RDS from the final snapshot (data preserved: users, tasks)
+aws rds restore-db-instance-from-db-snapshot \
+  --db-instance-identifier devops-app-postgres \
+  --db-snapshot-identifier devops-app-final-20260929 \
+  --db-instance-class db.t4g.micro --publicly-accessible \
+  --region eu-north-1
+# wait until available, then note the NEW endpoint:
+aws rds describe-db-instances --db-instance-identifier devops-app-postgres \
+  --query "DBInstances[0].Endpoint.Address" --output text --region eu-north-1
+# update DB_HOST in backend/.env and k8s/k8s-configmap.yaml to that endpoint
+# reopen RDS security group to your IP + the new node IPs on 5432
+
+# 3. Deploy everything (rebuilds images to ECR, applies manifests, public NLB)
+./deploy-all.sh
+```
+
+> If the snapshot restore is skipped, the app still boots and migrations recreate empty
+> tables — but previous users/tasks are only in the snapshot.
+
+---
+
+## Original live values (for reference / recreate)
 
 ## Account
 - Account ID: `135438495833`
