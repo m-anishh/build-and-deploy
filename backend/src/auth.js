@@ -107,4 +107,110 @@ router.get(
   })
 );
 
+// --- OAuth (Google + GitHub) ------------------------------------------
+const OAUTH = {
+  google: {
+    id: process.env.GOOGLE_CLIENT_ID, secret: process.env.GOOGLE_CLIENT_SECRET,
+    authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    scope: 'openid email profile',
+  },
+  github: {
+    id: process.env.GITHUB_CLIENT_ID, secret: process.env.GITHUB_CLIENT_SECRET,
+    authUrl: 'https://github.com/login/oauth/authorize',
+    tokenUrl: 'https://github.com/login/oauth/access_token',
+    scope: 'read:user user:email',
+  },
+};
+const providerEnabled = (p) => !!(OAUTH[p] && OAUTH[p].id && OAUTH[p].secret);
+const redirectUri = (p) => `${BASE_URL}/api/auth/${p}/callback`;
+
+function signToken(user) {
+  return jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_TTL });
+}
+
+async function upsertOAuthUser({ email, name, provider, providerId, avatar }) {
+  const { rows } = await db.query('SELECT * FROM users WHERE LOWER(email)=LOWER($1)', [email]);
+  if (rows[0]) {
+    await db.query(
+      'UPDATE users SET is_verified=TRUE, provider=$2, provider_id=$3, avatar_url=$4, last_login_at=NOW() WHERE id=$1',
+      [rows[0].id, provider, providerId, avatar]
+    );
+    return rows[0];
+  }
+  const ins = await db.query(
+    `INSERT INTO users (email, name, is_verified, provider, provider_id, avatar_url)
+     VALUES ($1,$2,TRUE,$3,$4,$5) RETURNING *`,
+    [email, name, provider, providerId, avatar]
+  );
+  return ins.rows[0];
+}
+
+// Which providers are configured (frontend enables buttons accordingly).
+router.get('/config', (req, res) => {
+  res.json({ google: providerEnabled('google'), github: providerEnabled('github') });
+});
+
+// Start the OAuth flow.
+router.get('/:provider(google|github)', (req, res) => {
+  const p = req.params.provider;
+  if (!providerEnabled(p)) return res.status(503).send(`${p} OAuth not configured`);
+  const o = OAUTH[p];
+  const params = new URLSearchParams({
+    client_id: o.id, redirect_uri: redirectUri(p), scope: o.scope, response_type: 'code', state: p,
+    ...(p === 'google' ? { access_type: 'online', prompt: 'select_account' } : {}),
+  });
+  res.redirect(`${o.authUrl}?${params}`);
+});
+
+// OAuth callback: exchange code, fetch profile, upsert user, hand back a JWT.
+router.get(
+  '/:provider(google|github)/callback',
+  asyncH(async (req, res) => {
+    const p = req.params.provider;
+    if (!providerEnabled(p)) return res.status(503).send('not configured');
+    const { code } = req.query;
+    if (!code) return res.redirect('/?oauth=error');
+    const o = OAUTH[p];
+    try {
+      const tokenRes = await fetch(o.tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+        body: new URLSearchParams({
+          client_id: o.id, client_secret: o.secret, code, redirect_uri: redirectUri(p),
+          grant_type: 'authorization_code',
+        }),
+      });
+      const tok = await tokenRes.json();
+      const accessToken = tok.access_token;
+      if (!accessToken) throw new Error('no access token');
+
+      let profile;
+      if (p === 'google') {
+        const u = await (await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })).json();
+        profile = { email: u.email, name: u.name, providerId: u.sub, avatar: u.picture };
+      } else {
+        const headers = { Authorization: `Bearer ${accessToken}`, 'User-Agent': 'manishOps' };
+        const u = await (await fetch('https://api.github.com/user', { headers })).json();
+        let email = u.email;
+        if (!email) {
+          const emails = await (await fetch('https://api.github.com/user/emails', { headers })).json();
+          const primary = Array.isArray(emails) ? emails.find((e) => e.primary && e.verified) || emails[0] : null;
+          email = primary && primary.email;
+        }
+        profile = { email, name: u.name || u.login, providerId: String(u.id), avatar: u.avatar_url };
+      }
+      if (!profile.email) throw new Error('no email from provider');
+
+      const user = await upsertOAuthUser({ ...profile, provider: p });
+      res.redirect(`/?token=${signToken(user)}`);
+    } catch (e) {
+      logger.error({ err: e.message, provider: p }, 'oauth callback failed');
+      res.redirect('/?oauth=error');
+    }
+  })
+);
+
 module.exports = { router, authMiddleware };

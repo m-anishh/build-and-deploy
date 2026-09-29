@@ -43,6 +43,7 @@ export const api = {
   signup: (body) => req('POST', '/api/auth/signup', body),
   login: (body) => req('POST', '/api/auth/login', body),
   me: () => req('GET', '/api/auth/me'),
+  authConfig: () => req('GET', '/api/auth/config'),
   info: () => req('GET', '/api/info'),
   ready: () => req('GET', '/ready'),
   metrics: () => text('/metrics'),

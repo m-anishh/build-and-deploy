@@ -27,6 +27,10 @@ export default function App() {
 
   // Restore session on load.
   useEffect(() => {
+    // OAuth callback hands the JWT back via ?token=…
+    const q = new URLSearchParams(window.location.search);
+    const urlToken = q.get('token');
+    if (urlToken) { token.set(urlToken); window.history.replaceState({}, '', window.location.pathname); }
     if (!token.get()) { setChecking(false); return; }
     api.me().then((r) => setUser(r.user)).catch(() => token.clear()).finally(() => setChecking(false));
   }, []);

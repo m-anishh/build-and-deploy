@@ -13,13 +13,18 @@ export default function AuthView({ onAuthed }) {
   const [err, setErr] = useState('');
   const [notice, setNotice] = useState('');
   const [verifyUrl, setVerifyUrl] = useState('');
+  const [providers, setProviders] = useState({ google: false, github: false });
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     if (q.get('verified') === '1') setNotice('Email verified — please sign in.');
     if (q.get('verified') === '0') setErr('Verification link invalid or expired.');
-    if (q.has('verified')) window.history.replaceState({}, '', window.location.pathname);
+    if (q.get('oauth') === 'error') setErr('Social sign-in failed. Try again or use email.');
+    if (q.has('verified') || q.has('oauth')) window.history.replaceState({}, '', window.location.pathname);
+    api.authConfig().then(setProviders).catch(() => {});
   }, []);
+
+  const oauth = (p) => { window.location.href = `/api/auth/${p}`; };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -92,8 +97,12 @@ export default function AuthView({ onAuthed }) {
           <div className="auth-or"><span>OR</span></div>
 
           <div className="auth-oauth-row">
-            <button type="button" className="auth-oauth" disabled title="OAuth coming soon"><b className="g">G</b> Sign in with Google</button>
-            <button type="button" className="auth-oauth" disabled title="OAuth coming soon"><b className="gh">⌥</b> Sign in with GitHub</button>
+            <button type="button" className="auth-oauth" onClick={() => oauth('google')} disabled={!providers.google} title={providers.google ? 'Sign in with Google' : 'Google OAuth not configured'}>
+              <b className="g">G</b> Google
+            </button>
+            <button type="button" className="auth-oauth" onClick={() => oauth('github')} disabled={!providers.github} title={providers.github ? 'Sign in with GitHub' : 'GitHub OAuth not configured'}>
+              <b className="gh">⌥</b> GitHub
+            </button>
           </div>
 
           <p className="auth-switch">
