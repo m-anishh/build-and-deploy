@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Layout from './components/Layout.jsx';
+import AuthView from './components/AuthView.jsx';
 import HomeView from './components/HomeView.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import DashboardsHub from './components/DashboardsHub.jsx';
@@ -15,14 +16,28 @@ import PipelinesView from './components/PipelinesView.jsx';
 import ReportsView from './components/ReportsView.jsx';
 import InfoView from './components/InfoView.jsx';
 import { useTelemetry } from './hooks/useTelemetry.js';
+import { api, token } from './api.js';
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [checking, setChecking] = useState(true);
   const [view, setView] = useState('home');
   const [, setDbDown] = useState(false);
-  const telemetry = useTelemetry(3000);
+  const telemetry = useTelemetry(user ? 3000 : null);
+
+  // Restore session on load.
+  useEffect(() => {
+    if (!token.get()) { setChecking(false); return; }
+    api.me().then((r) => setUser(r.user)).catch(() => token.clear()).finally(() => setChecking(false));
+  }, []);
+
+  const logout = () => { token.clear(); setUser(null); setView('home'); };
+
+  if (checking) return <div className="boot">Loading…</div>;
+  if (!user) return <AuthView onAuthed={setUser} />;
 
   return (
-    <Layout view={view} setView={setView} env={telemetry?.info?.env || 'production'}>
+    <Layout view={view} setView={setView} user={user} onLogout={logout}>
       {view === 'home' && <HomeView telemetry={telemetry} setView={setView} />}
       {view === 'metrics' && <Dashboard />}
       {view === 'dashboards' && <DashboardsHub setView={setView} />}

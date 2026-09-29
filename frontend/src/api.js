@@ -1,8 +1,20 @@
 // Thin fetch wrapper around the backend API. Paths are relative, so the same
 // build works behind any host/path and through the Vite dev proxy.
 
+const TOKEN_KEY = 'mo_token';
+export const token = {
+  get: () => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } },
+  set: (t) => { try { localStorage.setItem(TOKEN_KEY, t); } catch { /* ignore */ } },
+  clear: () => { try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ } },
+};
+
+function authHeaders() {
+  const t = token.get();
+  return t ? { Authorization: `Bearer ${t}` } : {};
+}
+
 async function req(method, url, body) {
-  const opts = { method, headers: {} };
+  const opts = { method, headers: { ...authHeaders() } };
   if (body !== undefined) {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
@@ -13,6 +25,7 @@ async function req(method, url, body) {
   if (!res.ok) {
     const err = new Error((data && (data.error || data.message)) || `HTTP ${res.status}`);
     err.status = res.status;
+    err.code = data && data.code;
     err.details = data && data.details;
     throw err;
   }
@@ -20,12 +33,16 @@ async function req(method, url, body) {
 }
 
 async function text(url) {
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: { ...authHeaders() } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.text();
 }
 
 export const api = {
+  // auth
+  signup: (body) => req('POST', '/api/auth/signup', body),
+  login: (body) => req('POST', '/api/auth/login', body),
+  me: () => req('GET', '/api/auth/me'),
   info: () => req('GET', '/api/info'),
   ready: () => req('GET', '/ready'),
   metrics: () => text('/metrics'),

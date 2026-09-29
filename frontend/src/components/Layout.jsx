@@ -26,7 +26,7 @@ const APP_NAV = [
   { id: 'ai', label: 'AI', Icon: Sparkles },
 ];
 
-export default function Layout({ view, setView, env = 'production', children }) {
+export default function Layout({ view, setView, user, onLogout, children }) {
   const label = [...NAV, ...APP_NAV].find((n) => n.id === view)?.label;
   return (
     <div className="shell">
@@ -49,6 +49,12 @@ export default function Layout({ view, setView, env = 'production', children }) 
           <div className="topbar-right">
             <span className="pill-time">Past 15m</span>
             <a className="ghlink" href="https://github.com/m-anishh/build-and-deploy" target="_blank" rel="noreferrer">source ↗</a>
+            {user && (
+              <div className="user-menu">
+                <span className="user-avatar" title={user.email}>{(user.name || user.email || '?')[0].toUpperCase()}</span>
+                <button className="btn ghost user-logout" onClick={onLogout}>Sign out</button>
+              </div>
+            )}
           </div>
         </header>
         <div className="content">{children}</div>

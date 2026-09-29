@@ -13,6 +13,7 @@ export function useTelemetry(intervalMs = 3000) {
   const series = useRef([]); // [{ t, rps, eps, latency, mem }]
 
   useEffect(() => {
+    if (!intervalMs) return undefined; // paused (e.g. logged out)
     let alive = true;
 
     const tick = async () => {
