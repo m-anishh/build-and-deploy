@@ -10,7 +10,8 @@ const path = require('path');
 const db = require('../src/db');
 const logger = require('../src/logger');
 
-const MIGRATIONS_DIR = path.join(__dirname, '..', 'migrations');
+// SQL lives in the top-level database/ directory (override with MIGRATIONS_DIR).
+const MIGRATIONS_DIR = process.env.MIGRATIONS_DIR || path.join(__dirname, '..', '..', 'database', 'migrations');
 
 async function ensureMigrationsTable() {
   await db.query(`

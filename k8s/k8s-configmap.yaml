@@ -22,6 +22,9 @@ data:
   DB_SSL: "true"
   DB_POOL_MAX: "10"
 
+  # ML anomaly-detection service (services/ml), in-cluster DNS
+  ML_SERVICE_URL: "http://devops-ml:8000"
+
   # Application configuration
   app-settings.json: |
     {

@@ -2,11 +2,12 @@ const request = require('supertest');
 const app = require('../app');
 
 describe('Core endpoints', () => {
-  test('GET / returns 200 with service info', async () => {
-    const res = await request(app).get('/');
+  test('GET /api/info returns 200 with service info', async () => {
+    const res = await request(app).get('/api/info');
     expect(res.statusCode).toBe(200);
     expect(res.body.status).toBe('healthy');
     expect(res.body).toHaveProperty('version');
+    expect(res.body).toHaveProperty('pod');
   });
 
   test('GET /health returns 200', async () => {
@@ -32,7 +33,7 @@ describe('Core endpoints', () => {
     expect(res.body.message).toBe('Hello, Test!');
   });
 
-  test('unknown route returns 404', async () => {
-    expect((await request(app).get('/nope')).statusCode).toBe(404);
+  test('unknown API route returns 404', async () => {
+    expect((await request(app).get('/api/nope')).statusCode).toBe(404);
   });
 });

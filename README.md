@@ -1,4 +1,14 @@
-# Build-and-deploy — Production-ready DevOps project
+# manishOps — DevOps/SRE Observability Platform
+
+> Evolving into a multi-tenant SaaS observability platform. Full product/architecture spec: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+>
+> **Monorepo layout:** `frontend/` (React+Vite UI) · `backend/` (Node/Express API) · `database/` (SQL migrations) · `ai/ml/` (Python FastAPI anomaly service) · `monitoring/` (Prometheus/Grafana/exporters) · `k8s/` · `infra/terraform/` · `scripts/`
+>
+> Run locally: `docker compose up --build` (app+db+ml), or per service — backend: `cd backend && npm i && npm run dev`; UI: `cd frontend && npm i && npm run dev`.
+
+---
+
+# Build-and-deploy — Production-ready DevOps foundation
 
 ![CI/CD](https://github.com/m-anishh/build-and-deploy/actions/workflows/github-actions-ci-cd.yml/badge.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)
@@ -74,11 +84,12 @@ Service**, with a **ServiceAccount + RBAC**, **ConfigMap**, and **HPA**.
 ## Application
 
 Modular Express server ([app.js](app.js) + [src/](src/)) — a JSON API backed by
-PostgreSQL.
+PostgreSQL, plus a **React UI** ([frontend/](frontend/)) served at `/`.
 
 | Method | Path                | Purpose                                        |
 |--------|---------------------|------------------------------------------------|
-| GET    | `/`                 | Root info (status, version, uptime)            |
+| GET    | `/`                 | React UI (task board + live status dashboard)   |
+| GET    | `/api/info`         | Service info (status, version, uptime, pod)     |
 | GET    | `/health`           | Liveness + startup probe                        |
 | GET    | `/ready`            | Readiness probe — checks DB (503 while draining)|
 | GET    | `/metrics`          | Prometheus metrics                              |
@@ -124,6 +135,30 @@ cp .env.example .env        # then edit DB_* values
 npm run migrate             # apply migrations
 npm run dev                 # NODE_ENV=development, port 3000
 npm test                    # jest + coverage (pretest runs eslint)
+```
+
+### Frontend (React UI)
+
+A Vite + React single-page app in [frontend/](frontend/): a **task board**
+(create / filter / advance-status / delete, wired to `/api/tasks`) and a **live
+status dashboard** (polls `/api/info`, `/health`, `/ready` — shows version,
+uptime, pod, env, DB state). It degrades gracefully: in stateless mode it shows
+a banner and keeps the dashboard live.
+
+Express serves the production build from `frontend/dist` at `/` **only if that
+build exists** — so tests and API-only runs need no build. In the Docker image a
+dedicated stage builds the UI and copies `dist` in, so `/` serves the app with
+zero extra infrastructure (same container, same port, no K8s change).
+
+```bash
+# hot-reload dev: Vite on :5173 proxies /api,/health,/ready,/metrics -> :3000
+npm run ui:install          # once
+npm run dev &               # backend on :3000
+npm run ui:dev              # UI on http://localhost:5173
+
+# production-style: build UI, then Express serves it at /
+npm run ui:build
+npm start                   # open http://localhost:3000
 ```
 
 ---

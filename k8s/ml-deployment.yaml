@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-ml
+  namespace: production-app
+  labels:
+    app: devops-ml
+    component: ml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devops-ml
+  template:
+    metadata:
+      labels:
+        app: devops-ml
+        component: ml
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: ml
+          image: "ghcr.io/yourusername/devops-ml:latest"  # replaced by CI
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: MODEL_PATH
+              value: /app/models/model.joblib
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            httpGet: { path: /ready, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { memory: "128Mi", cpu: "100m" }
+            limits: { memory: "512Mi", cpu: "500m" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: models
+              mountPath: /app/models
+      volumes:
+        - name: models
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-ml
+  namespace: production-app
+  labels:
+    app: devops-ml
+spec:
+  type: ClusterIP
+  selector:
+    app: devops-ml
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

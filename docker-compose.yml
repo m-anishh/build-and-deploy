@@ -20,7 +20,9 @@ services:
       retries: 10
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "3000:3000"
     environment:
@@ -33,9 +35,26 @@ services:
       DB_PASSWORD: change-me
       DB_SSL: "false"
       APP_VERSION: "2.0.0-local"
+      ML_SERVICE_URL: "http://ml:8000"
     depends_on:
       db:
         condition: service_healthy
 
+  ml:
+    build: ./ai/ml
+    ports:
+      - "8000:8000"
+    environment:
+      APP_VERSION: "0.1.0-local"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
 volumes:
   pgdata:
+
+
+
+

@@ -1,0 +1,117 @@
+# Cluster metric exporters that feed the manishOps Kubernetes dashboard:
+#   - kube-state-metrics : kube_* object state (limits/requests, restarts, phase)
+#   - node-exporter      : node_* host metrics (CPU/mem/disk/net per node)
+# Container (container_*) and volume (kubelet_volume_stats_*) metrics come from
+# the kubelet/cAdvisor, scraped directly by Prometheus (see prometheus.yaml).
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: kube-state-metrics, namespace: monitoring }
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: { name: kube-state-metrics }
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps","secrets","nodes","pods","services","resourcequotas","replicationcontrollers","limitranges","persistentvolumeclaims","persistentvolumes","namespaces","endpoints"]
+    verbs: ["list","watch"]
+  - apiGroups: ["apps"]
+    resources: ["statefulsets","daemonsets","deployments","replicasets"]
+    verbs: ["list","watch"]
+  - apiGroups: ["batch"]
+    resources: ["cronjobs","jobs"]
+    verbs: ["list","watch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["list","watch"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["list","watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: { name: kube-state-metrics }
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: kube-state-metrics }
+subjects:
+  - { kind: ServiceAccount, name: kube-state-metrics, namespace: monitoring }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-state-metrics
+  namespace: monitoring
+  labels: { app: kube-state-metrics }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: kube-state-metrics } }
+  template:
+    metadata:
+      labels: { app: kube-state-metrics }
+    spec:
+      serviceAccountName: kube-state-metrics
+      containers:
+        - name: kube-state-metrics
+          image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
+          ports: [{ name: http, containerPort: 8080 }]
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+          resources:
+            requests: { memory: "64Mi", cpu: "20m" }
+            limits: { memory: "192Mi", cpu: "200m" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-state-metrics
+  namespace: monitoring
+  labels: { app: kube-state-metrics }
+spec:
+  selector: { app: kube-state-metrics }
+  ports: [{ name: http, port: 8080, targetPort: http }]
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: monitoring
+  labels: { app: node-exporter }
+spec:
+  selector: { matchLabels: { app: node-exporter } }
+  template:
+    metadata:
+      labels: { app: node-exporter }
+    spec:
+      hostNetwork: true
+      hostPID: true
+      tolerations: [{ operator: "Exists" }]
+      containers:
+        - name: node-exporter
+          image: quay.io/prometheus/node-exporter:v1.8.2
+          args: ["--path.rootfs=/host/root", "--path.procfs=/host/proc", "--path.sysfs=/host/sys"]
+          ports: [{ name: metrics, containerPort: 9100 }]
+          securityContext: { runAsNonRoot: true, runAsUser: 65534 }
+          resources:
+            requests: { memory: "32Mi", cpu: "10m" }
+            limits: { memory: "128Mi", cpu: "200m" }
+          volumeMounts:
+            - { name: proc, mountPath: /host/proc, readOnly: true }
+            - { name: sys, mountPath: /host/sys, readOnly: true }
+            - { name: root, mountPath: /host/root, readOnly: true, mountPropagation: HostToContainer }
+      volumes:
+        - { name: proc, hostPath: { path: /proc } }
+        - { name: sys, hostPath: { path: /sys } }
+        - { name: root, hostPath: { path: / } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-exporter
+  namespace: monitoring
+  labels: { app: node-exporter }
+spec:
+  selector: { app: node-exporter }
+  ports: [{ name: metrics, port: 9100, targetPort: metrics }]

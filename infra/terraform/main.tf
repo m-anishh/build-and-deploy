@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# RDS PostgreSQL for the devops-app, provisioned into the existing EKS VPC.
+# RDS PostgreSQL for the devops-app, provisioned into an existing VPC.
 #
 #   terraform init
 #   terraform apply -var="vpc_id=vpc-xxxx" -var='subnet_ids=["subnet-a","subnet-b"]' \
@@ -7,6 +7,9 @@
 #
 # Outputs the DB endpoint + a Secrets Manager secret ARN that External Secrets
 # (or a manual kubectl secret) can consume.
+#
+# NOTE: A full-platform variant (VPC + EKS + ECR + RDS + GitHub OIDC in one
+# apply) is planned; this module currently provisions RDS only.
 # ---------------------------------------------------------------------------
 
 terraform {
@@ -23,17 +26,15 @@ provider "aws" {
   region = var.region
 }
 
-# Subnet group spanning the private subnets of the EKS VPC.
 resource "aws_db_subnet_group" "this" {
   name       = "${var.name}-db-subnets"
   subnet_ids = var.subnet_ids
   tags       = local.tags
 }
 
-# Security group: Postgres reachable only from within the cluster CIDR.
 resource "aws_security_group" "db" {
   name        = "${var.name}-db-sg"
-  description = "Allow Postgres from the EKS cluster"
+  description = "Allow Postgres from the cluster CIDR"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -61,7 +62,7 @@ resource "aws_db_instance" "this" {
   instance_class = var.instance_class
 
   allocated_storage     = var.allocated_storage
-  max_allocated_storage = var.max_allocated_storage
+  max_allocated_storage = var.max_allocated_storage > 0 ? var.max_allocated_storage : null
   storage_type          = "gp3"
   storage_encrypted     = true
 
@@ -85,8 +86,6 @@ resource "aws_db_instance" "this" {
   tags = local.tags
 }
 
-# Store connection details in Secrets Manager so the cluster never needs the
-# password in plaintext Terraform state consumers.
 resource "aws_secretsmanager_secret" "db" {
   name        = "${var.name}/db-credentials"
   description = "PostgreSQL credentials for ${var.name}"

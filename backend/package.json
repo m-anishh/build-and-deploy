@@ -9,6 +9,9 @@
     "test": "jest --coverage --forceExit",
     "lint": "eslint app.js src scripts",
     "migrate": "node scripts/migrate.js",
+    "ui:install": "npm --prefix ../frontend ci",
+    "ui:dev": "npm --prefix ../frontend run dev",
+    "ui:build": "npm --prefix ../frontend run build",
     "pretest": "npm run lint"
   },
   "keywords": [
@@ -23,7 +26,9 @@
   "author": "DevOps Team",
   "license": "MIT",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.13.1",
     "pino": "^9.5.0",
     "pino-http": "^10.3.0",

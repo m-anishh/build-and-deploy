@@ -25,13 +25,16 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+          cache-dependency-path: backend/package-lock.json
       - run: npm ci
+        working-directory: backend
       - run: npm test
+        working-directory: backend
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-report
-          path: coverage/
+          path: backend/coverage/
 
   security:
     name: Security Scan
@@ -47,6 +50,7 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
       - run: npm audit --audit-level=high
+        working-directory: backend
 
   build:
     name: Build & Push Docker Image
@@ -75,6 +79,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
+          file: backend/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
