@@ -1,0 +1,20 @@
+# Public entry point — AWS Network Load Balancer in front of the app.
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-app-public
+  namespace: production-app
+  labels:
+    app: devops-app
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+spec:
+  type: LoadBalancer
+  selector:
+    app: devops-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

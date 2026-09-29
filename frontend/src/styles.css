@@ -207,21 +207,28 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 .auth-dots span.on { width: 22px; background: #fff; }
 
 /* floating preview */
-.auth-preview { position: relative; }
-.pv-card { background: #fff; border-radius: 14px; box-shadow: 0 16px 40px #0b295c40; padding: 14px 16px; }
-.pv-main { color: #1e293b; }
-.pv-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
-.pv-legend { font-weight: 500; color: #94a3b8; font-size: 10px; display: flex; align-items: center; gap: 6px; }
-.pv-legend i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 2px; }
-.pv-legend .d1 { background: #3B82F6; } .pv-legend .d2 { background: #cbd5e1; }
-.pv-bars { display: flex; align-items: flex-end; gap: 8px; height: 130px; }
-.pv-bar { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; }
-.pv-bar-top { background: #dbe6ff; border-radius: 3px 3px 0 0; }
-.pv-bar-bot { background: #3B82F6; border-radius: 0 0 3px 3px; }
-.pv-donut { position: absolute; right: -10px; bottom: -18px; width: 130px; text-align: center; }
-.pv-donut-title { font-size: 10px; color: #94a3b8; font-weight: 600; text-align: left; }
-.pv-ring { width: 82px; height: 82px; margin: 4px auto 0; display: block; }
-.pv-donut-val { position: absolute; bottom: 30px; left: 0; right: 0; font-size: 18px; font-weight: 800; color: #1e293b; }
+.auth-preview { position: relative; margin-top: 8px; }
+.pv-card { background: #fff; border-radius: 16px; box-shadow: 0 18px 44px #0b295c40; }
+.pv-main { color: #1e293b; padding: 16px 18px 12px; }
+.pv-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; margin-bottom: 14px; }
+.pv-legend { font-weight: 500; color: #94a3b8; font-size: 10px; display: flex; align-items: center; gap: 8px; }
+.pv-legend i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 3px; }
+.pv-legend .d1 { background: #3B82F6; } .pv-legend .d2 { background: #dbe2ee; }
+.pv-bars { display: flex; align-items: flex-end; gap: 9px; height: 132px; position: relative; }
+.pv-bar { flex: 1; height: 100%; background: #eef2fb; border-radius: 5px; position: relative; }
+.pv-bar-fill { position: absolute; bottom: 0; left: 0; width: 100%; background: #3B82F6; border-radius: 5px; }
+.pv-badge { position: absolute; top: -6px; left: 50%; transform: translate(-50%, -100%); background: #0f172a; color: #fff; font-size: 9px; line-height: 1.35; padding: 5px 8px; border-radius: 7px; white-space: nowrap; text-align: center; box-shadow: 0 6px 16px #0f172a55; }
+.pv-badge b { color: #7dd3fc; }
+.pv-x { display: flex; justify-content: space-between; margin-top: 8px; }
+.pv-x span { flex: 1; text-align: center; font-size: 8.5px; color: #b6c0d4; }
+.pv-donut { position: absolute; right: -14px; top: -26px; width: 132px; padding: 12px 14px; }
+.pv-donut-head { font-size: 10px; color: #94a3b8; font-weight: 700; margin-bottom: 4px; }
+.pv-ring { width: 84px; height: 84px; margin: 0 auto; display: block; }
+.pv-donut-center { position: absolute; top: 46px; left: 0; right: 0; text-align: center; }
+.pv-donut-center b { display: block; font-size: 16px; font-weight: 800; color: #1e293b; }
+.pv-donut-center span { font-size: 8px; color: #94a3b8; }
+.pv-donut-legend { display: flex; justify-content: center; gap: 6px; margin-top: 6px; font-size: 8px; color: #64748b; }
+.pv-donut-legend i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 2px; vertical-align: middle; }
 
 @media (max-width: 900px) { .auth { grid-template-columns: 1fr; } .auth-right { display: none; } }
 

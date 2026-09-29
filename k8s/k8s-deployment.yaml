@@ -8,7 +8,7 @@ metadata:
     version: v1
     managed-by: devops-team
 spec:
-  replicas: 2
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -57,7 +57,7 @@ spec:
       
       containers:
         - name: app
-          image: "ghcr.io/yourusername/devops-app:latest"  # Update with your registry
+          image: "135438495833.dkr.ecr.eu-north-1.amazonaws.com/manishops-backend:latest"  # Update with your registry
           imagePullPolicy: IfNotPresent
           
           # Container ports

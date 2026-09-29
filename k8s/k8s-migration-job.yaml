@@ -33,7 +33,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: migrate
-          image: "ghcr.io/yourusername/devops-app:latest"  # replaced by CI
+          image: "135438495833.dkr.ecr.eu-north-1.amazonaws.com/manishops-backend:latest"  # replaced by CI
           imagePullPolicy: IfNotPresent
           command: ["node", "scripts/migrate.js"]
           envFrom:

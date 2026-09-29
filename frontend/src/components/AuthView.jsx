@@ -118,26 +118,39 @@ export default function AuthView({ onAuthed }) {
   );
 }
 
-// Floating product-preview card (mock dashboard) like the reference design.
+// Floating product-preview card (mock dashboard) matching the reference design.
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
+const FILL = [55, 40, 62, 35, 48, 58, 30, 66, 44, 60];
+
 function Preview() {
-  const bars = [40, 62, 48, 80, 55, 70, 45, 90, 60, 75];
   return (
     <div className="auth-preview">
       <div className="pv-card pv-main">
-        <div className="pv-head"><span>Service Report</span><span className="pv-legend"><i className="d1" />Latency <i className="d2" />Errors</span></div>
+        <div className="pv-head">
+          <span className="pv-title">Service Report</span>
+          <span className="pv-legend"><i className="d1" />Requests <i className="d2" />Errors</span>
+        </div>
         <div className="pv-bars">
-          {bars.map((h, i) => (
-            <div key={i} className="pv-bar"><span className="pv-bar-top" style={{ height: `${h * 0.5}px` }} /><span className="pv-bar-bot" style={{ height: `${h}px` }} /></div>
+          {FILL.map((h, i) => (
+            <div key={i} className="pv-bar">
+              <span className="pv-bar-fill" style={{ height: `${h}%` }} />
+              {i === 6 && <span className="pv-badge">p95 182ms<br /><b>err 0.4%</b></span>}
+            </div>
           ))}
         </div>
+        <div className="pv-x">{MONTHS.map((m) => <span key={m}>{m}</span>)}</div>
       </div>
+
       <div className="pv-card pv-donut">
-        <div className="pv-donut-title">Health</div>
+        <div className="pv-donut-head">Signal mix</div>
         <svg viewBox="0 0 36 36" className="pv-ring">
-          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e6ecff" strokeWidth="3.5" />
-          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3B82F6" strokeWidth="3.5" strokeDasharray="78 100" strokeLinecap="round" transform="rotate(-90 18 18)" />
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#eef2fb" strokeWidth="4" />
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3B82F6" strokeWidth="4" strokeDasharray="46 100" strokeLinecap="round" transform="rotate(-90 18 18)" />
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#22C55E" strokeWidth="4" strokeDasharray="30 100" strokeDashoffset="-46" strokeLinecap="round" transform="rotate(-90 18 18)" />
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#F59E0B" strokeWidth="4" strokeDasharray="18 100" strokeDashoffset="-76" strokeLinecap="round" transform="rotate(-90 18 18)" />
         </svg>
-        <div className="pv-donut-val">78%</div>
+        <div className="pv-donut-center"><b>2.4k</b><span>signals</span></div>
+        <div className="pv-donut-legend"><i style={{ background: '#3B82F6' }} />API <i style={{ background: '#22C55E' }} />Infra <i style={{ background: '#F59E0B' }} />K8s</div>
       </div>
     </div>
   );

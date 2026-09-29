@@ -23,11 +23,14 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: ml
-          image: "ghcr.io/yourusername/devops-ml:latest"  # replaced by CI
+          image: "135438495833.dkr.ecr.eu-north-1.amazonaws.com/manishops-ml:latest"  # replaced by CI
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

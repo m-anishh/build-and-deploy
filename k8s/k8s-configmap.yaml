@@ -16,14 +16,16 @@ data:
 
   # Database connection (non-secret parts only; credentials live in the
   # db-credentials Secret). Point DB_HOST at your RDS endpoint.
-  DB_HOST: "build-and-deploy-postgres.cne6gw6g6pnx.eu-north-1.rds.amazonaws.com"
+  DB_HOST: "devops-app-postgres.cne6gw6g6pnx.eu-north-1.rds.amazonaws.com"
   DB_PORT: "5432"
   DB_NAME: "appdb"
   DB_SSL: "true"
   DB_POOL_MAX: "10"
 
-  # ML anomaly-detection service (services/ml), in-cluster DNS
+  # ML anomaly-detection service, in-cluster DNS
   ML_SERVICE_URL: "http://devops-ml:8000"
+  # Prometheus datasource (public demo until in-cluster Prometheus is deployed)
+  PROM_URL: "https://prometheus.demo.prometheus.io"
 
   # Application configuration
   app-settings.json: |
