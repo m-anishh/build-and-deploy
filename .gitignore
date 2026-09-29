@@ -2,3 +2,8 @@ node_modules/
 coverage/
 .env
 .mcp.json
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/*.tfvars
+infra/terraform/.terraform.lock.hcl

@@ -1,5 +1,13 @@
 # Build-and-deploy — Production-ready DevOps project
 
+![CI/CD](https://github.com/m-anishh/build-and-deploy/actions/workflows/github-actions-ci-cd.yml/badge.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-EKS%201.32-326CE5?logo=kubernetes&logoColor=white)
+![Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC?logo=terraform&logoColor=white)
+![Prometheus](https://img.shields.io/badge/metrics-Prometheus-E6522C?logo=prometheus&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
 A **stateful REST API** (Express + **PostgreSQL/RDS**) shipped through a full
 CI/CD pipeline to **Amazon EKS**, with **Prometheus metrics**, **structured
 logging**, and a **Grafana dashboard**. GitHub Actions builds and scans the
@@ -17,6 +25,22 @@ Kubernetes with an automatic rollback on failure. Authentication to AWS uses
 
 ---
 
+## Table of contents
+
+- [Architecture](#architecture)
+- [Application](#application)
+- [Docker](#docker)
+- [Database & migrations](#database--migrations)
+- [Observability](#observability)
+- [CI/CD pipeline](#cicd-pipeline)
+- [Infrastructure (EKS)](#infrastructure-eks)
+- [Kubernetes manifests](#kubernetes-manifests)
+- [Deploy, verify, rollback](#deploy-verify-rollback)
+- [Teardown (stop all billing)](#teardown-stop-all-billing)
+- [Troubleshooting](#troubleshooting)
+- [Repo layout](#repo-layout)
+
+---
 ## Architecture
 
 ```
@@ -394,14 +418,99 @@ kubectl delete svc devops-app-public -n production-app
 
 ---
 
+## Live deployment runbook (AWS, from zero)
+
+This is the exact end-to-end sequence used to stand the project up on a fresh
+account (everything torn down), plus the real gotchas hit on an **AWS Free Plan**.
+
+### 1. Cluster + CI identity
+
+```bash
+# EKS cluster (~20 min; eksctl also installs metrics-server as an addon)
+eksctl create cluster -f infra/eks-cluster.yaml
+
+# GitHub Actions OIDC provider + deploy role (account-level, no keys)
+aws iam create-open-id-connect-provider \
+  --url https://token.actions.githubusercontent.com \
+  --client-id-list sts.amazonaws.com \
+  --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
+aws iam create-role --role-name github-actions-deploy \
+  --assume-role-policy-document file://trust.json           # sub: repo env:production + ref:main
+aws iam put-role-policy --role-name github-actions-deploy \
+  --policy-name eks-describe --policy-document file://perm.json   # eks:DescribeCluster
+
+# Map the role into the cluster, scoped to the app namespace
+aws eks create-access-entry  --cluster-name build-and-deploy --principal-arn <role-arn> --type STANDARD
+aws eks associate-access-policy --cluster-name build-and-deploy --principal-arn <role-arn> \
+  --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy \
+  --access-scope type=namespace,namespaces=production-app
+```
+
+### 2. Database (RDS) via Terraform
+
+```bash
+cd infra/terraform && terraform init
+# aws login stores creds in a way Terraform's SDK can't read -> export them:
+eval "$(aws configure export-credentials --format env)"
+terraform apply \
+  -var="vpc_id=<eks-vpc>" -var='subnet_ids=["<priv-a>","<priv-b>","<priv-c>"]' \
+  -var="allowed_cidr=192.168.0.0/16" -var="deletion_protection=false" \
+  -var="db_password=<password>"      # RDS master password: NO @ / " space
+```
+
+Defaults are **Free-Plan-safe**: PostgreSQL 16.9, `db.t4g.micro`, backup
+retention 1 day, Performance Insights off, no storage autoscaling.
+
+### 3. App secrets/config + deploy
+
+```bash
+kubectl apply -f k8s/k8s-namespace.yaml -f k8s/k8s-rbac.yaml
+kubectl create secret generic db-credentials -n production-app \
+  --from-literal=DB_USER=appuser --from-literal=DB_PASSWORD=<password>
+# set DB_HOST in k8s/k8s-configmap.yaml to the RDS endpoint, then push to main
+git push origin main        # CI/CD: build -> migrate (Job) -> deploy -> rollout
+```
+
+### 4. Expose publicly (free, NodePort + node SG)
+
+```bash
+kubectl apply -f k8s/k8s-public-nodeport.yaml     # app :30080, grafana :30300
+SG=$(aws ec2 describe-instances --filters Name=tag:eks:cluster-name,Values=build-and-deploy \
+  --query 'Reservations[0].Instances[0].SecurityGroups[0].GroupId' --output text)
+aws ec2 authorize-security-group-ingress --group-id $SG --protocol tcp --port 30080 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id $SG --protocol tcp --port 30300 --cidr 0.0.0.0/0
+kubectl get nodes -o jsonpath='{range .items[*]}{.status.addresses[?(@.type=="ExternalIP")].address}{"\n"}{end}'
+# App:     http://<node-ip>:30080     Grafana: http://<node-ip>:30300  (admin/admin)
+```
+
+> Node IPs change if a node is replaced. For a stable URL use an ALB Ingress or a
+> LoadBalancer Service (adds a paid ELB).
+
+### Gotchas hit on the AWS Free Plan (and fixes)
+
+| Problem | Fix |
+|---------|-----|
+| Terraform: `No valid credential sources` (creds came from `aws login`) | `eval "$(aws configure export-credentials --format env)"` before `terraform apply` |
+| RDS `FreeTierRestrictionError`: backup retention too high | `backup_retention_days = 1`, Performance Insights off |
+| RDS `Cannot find version 16.4` | use an offered version (`16.9`); check `aws rds describe-db-engine-versions` |
+| App pods stuck **Pending** on `t3.micro` | `t3.micro` caps at **4 pods/node**; freed slots (removed metrics-server, coredns→1) and **scaled the nodegroup to 4 nodes**. Proper fix: VPC-CNI prefix delegation with a nodegroup rebuilt at `maxPodsPerNode: 110` |
+| Two databases billing | deleted the stray manually-created Aurora cluster |
+
+---
+
 ## Teardown (stop all billing)
 
 ```bash
+# app + monitoring + public services
 kubectl delete -f k8s/ --ignore-not-found
+kubectl delete ns monitoring --ignore-not-found
+# database
+cd infra/terraform && terraform destroy -auto-approve   # or: aws rds delete-db-instance ...
+# cluster (nodes, VPC, CFN stacks)
 eksctl delete cluster --name build-and-deploy --region eu-north-1   # ~10 min
 ```
 
-Removes cluster, nodes, VPC, and CloudFormation stacks. The GHCR image, the
+Removes cluster, nodes, VPC, RDS, and CloudFormation stacks. The GHCR image, the
 OIDC provider, and the `github-actions-deploy` role remain (reusable) — delete
 them separately if you want a full cleanup.
 

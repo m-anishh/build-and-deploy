@@ -29,7 +29,7 @@ variable "allowed_cidr" {
 variable "engine_version" {
   description = "PostgreSQL engine version"
   type        = string
-  default     = "16.4"
+  default     = "16.9"
 }
 
 variable "instance_class" {
@@ -45,9 +45,15 @@ variable "allocated_storage" {
 }
 
 variable "max_allocated_storage" {
-  description = "Autoscaling storage ceiling (GiB)"
+  description = "Autoscaling storage ceiling (GiB); 0 disables autoscaling (required on AWS Free Plan)"
   type        = number
-  default     = 100
+  default     = 0
+}
+
+variable "performance_insights" {
+  description = "Enable Performance Insights (blocked on AWS Free Plan / small instances)"
+  type        = bool
+  default     = false
 }
 
 variable "db_name" {
@@ -75,9 +81,9 @@ variable "multi_az" {
 }
 
 variable "backup_retention_days" {
-  description = "Automated backup retention in days"
+  description = "Automated backup retention in days (AWS Free Plan caps this low; 1 is safe)"
   type        = number
-  default     = 7
+  default     = 1
 }
 
 variable "deletion_protection" {
